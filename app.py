@@ -1,10 +1,10 @@
 """
 EN-AR-Transformer-Translator — Streamlit Demo App
-Loads the fine-tuned (or base) Helsinki-NLP/opus-mt-en-ar model and
-lets the user translate English text into Arabic interactively.
+Loads the fine-tuned model from the Hugging Face Hub repo
+"B0o0da/EN-AR-Model" (falls back to the base Helsinki-NLP model
+if the Hub repo can't be loaded) and lets the user translate
+English text into Arabic interactively.
 """
-
-import os
 
 import streamlit as st
 from transformers import AutoTokenizer, TFAutoModelForSeq2SeqLM
@@ -12,8 +12,8 @@ from transformers import AutoTokenizer, TFAutoModelForSeq2SeqLM
 # ------------------------------------------------------------------
 # Config
 # ------------------------------------------------------------------
-MODEL_PATH = "finetuned-opus-mt-en-ar"     # folder with your fine-tuned model files
-BASE_MODEL = "Helsinki-NLP/opus-mt-en-ar"  # fallback if no fine-tuned model found
+HUB_MODEL = "B0o0da/EN-AR-Model/blob/main/finetuned-opus-mt-en-ar/tf_model.h5"           # your model on the Hugging Face Hub
+BASE_MODEL = "Helsinki-NLP/opus-mt-en-ar"  # fallback if the Hub model can't be loaded
 MAX_LEN = 100
 NUM_BEAMS = 4  # beam search width — higher = better quality, slower generation
 
@@ -29,19 +29,20 @@ st.set_page_config(
 # ------------------------------------------------------------------
 @st.cache_resource(show_spinner="Loading translation model...")
 def load_model():
-    # A fine-tuned MarianMT export has these files in MODEL_PATH:
-    # config.json, generation_config.json, source.spm, special_tokens_map.json,
-    # target.spm, tf_model.h5, tokenizer_config.json, vocab.json
-    required_files = ["config.json", "tf_model.h5", "vocab.json"]
-    has_finetuned = os.path.isdir(MODEL_PATH) and all(
-        os.path.isfile(os.path.join(MODEL_PATH, f)) for f in required_files
-    )
-
-    model_name = MODEL_PATH if has_finetuned else BASE_MODEL
-
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = TFAutoModelForSeq2SeqLM.from_pretrained(model_name)
-    return tokenizer, model, model_name, has_finetuned
+    # Try loading your fine-tuned model directly from the Hugging Face Hub.
+    # This works automatically as long as the repo (B0o0da/EN-AR-Model)
+    # contains the standard files: config.json, generation_config.json,
+    # source.spm, special_tokens_map.json, target.spm, tf_model.h5 (or
+    # pytorch_model.bin / model.safetensors), tokenizer_config.json, vocab.json
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(HUB_MODEL)
+        model = TFAutoModelForSeq2SeqLM.from_pretrained(HUB_MODEL)
+        return tokenizer, model, HUB_MODEL, True
+    except Exception as e:
+        st.warning(f"Could not load `{HUB_MODEL}` from the Hub ({e}). Falling back to base model.")
+        tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
+        model = TFAutoModelForSeq2SeqLM.from_pretrained(BASE_MODEL)
+        return tokenizer, model, BASE_MODEL, False
 
 
 tokenizer, model, loaded_model_name, using_finetuned = load_model()
@@ -73,7 +74,7 @@ st.title("🌐 EN → AR Translator")
 if using_finetuned:
     st.caption(f"Powered by your fine-tuned model · `{loaded_model_name}`")
 else:
-    st.caption(f"⚠️ Fine-tuned model not found in `{MODEL_PATH}/` — using base model `{loaded_model_name}`")
+    st.caption(f"⚠️ Could not load `{HUB_MODEL}` — using base model `{loaded_model_name}`")
 
 st.divider()
 

@@ -1,9 +1,0 @@
-finetuned-opus-mt-en-ar/config.json
-finetuned-opus-mt-en-ar/generation_config.json
-finetuned-opus-mt-en-ar/source.spm
-finetuned-opus-mt-en-ar/special_tokens_map.json
-finetuned-opus-mt-en-ar/target.spm
-finetuned-opus-mt-en-ar/tf_model.h5
-finetuned-opus-mt-en-ar/tokenizer_config.json
-finetuned-opus-mt-en-ar/vocab.json
-finetuned-opus-mt-en-ar/__huggingface_repos__.json
