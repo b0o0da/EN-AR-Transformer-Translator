@@ -12,7 +12,8 @@ from transformers import AutoTokenizer, TFAutoModelForSeq2SeqLM
 # ------------------------------------------------------------------
 # Config
 # ------------------------------------------------------------------
-HUB_MODEL = "B0o0da/EN-AR-Model/blob/main/finetuned-opus-mt-en-ar/tf_model.h5"           # your model on the Hugging Face Hub
+HUB_MODEL = "B0o0da/EN-AR-Model"           # repo_id only — NOT a blob/file URL
+HUB_SUBFOLDER = "finetuned-opus-mt-en-ar"  # set to "" if your files sit in the repo root
 BASE_MODEL = "Helsinki-NLP/opus-mt-en-ar"  # fallback if the Hub model can't be loaded
 MAX_LEN = 100
 NUM_BEAMS = 4  # beam search width — higher = better quality, slower generation
@@ -35,8 +36,9 @@ def load_model():
     # source.spm, special_tokens_map.json, target.spm, tf_model.h5 (or
     # pytorch_model.bin / model.safetensors), tokenizer_config.json, vocab.json
     try:
-        tokenizer = AutoTokenizer.from_pretrained(HUB_MODEL)
-        model = TFAutoModelForSeq2SeqLM.from_pretrained(HUB_MODEL)
+        kwargs = {"subfolder": HUB_SUBFOLDER} if HUB_SUBFOLDER else {}
+        tokenizer = AutoTokenizer.from_pretrained(HUB_MODEL, **kwargs)
+        model = TFAutoModelForSeq2SeqLM.from_pretrained(HUB_MODEL, **kwargs)
         return tokenizer, model, HUB_MODEL, True
     except Exception as e:
         st.warning(f"Could not load `{HUB_MODEL}` from the Hub ({e}). Falling back to base model.")
